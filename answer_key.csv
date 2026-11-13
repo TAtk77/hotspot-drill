@@ -1,0 +1,7 @@
+image,prompt,targets,explanation
+hs001.png,Click the PVC.,46.3:42.9:3.5:30,"Wide, bizarre QRS with no preceding P wave and a T wave deflected opposite the QRS, followed by a compensatory pause."
+hs002.png,Click every PVC on this strip.,33.0:42.9:3.5:30;68.0:42.9:3.5:30,"Two PVCs, each with a wide QRS, no P wave in front, and a compensatory pause after. Make sure you scan the whole strip, not just the first one you find."
+hs003.png,Click the non-conducted P wave.,50.7:58.9:2.5:14,"Constant PR intervals before and after, then a P wave with no QRS behind it: a dropped beat consistent with Mobitz II."
+hs004.png,Click inside the pause.,58.3:60.7:20:30,Roughly a 3-second pause between QRS complexes (15 large boxes at 25 mm/s). Check it against notification criteria.
+hs005.png,Click the artifact.,48.3:50.0:11:40,"Sudden chaotic, high-frequency baseline with normal QRS complexes at the same rate on both sides of it. That is artifact, not a run of VT."
+hs006.png,Click the premature atrial beat.,45.3:46.4:3.5:30,"Early beat with a narrow QRS and a visible (slightly early, different) P wave in front of it: a PAC."

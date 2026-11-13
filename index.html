@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECG Hotspot Drill</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+
+:root {
+  --bg:        #0d1117;
+  --surface:   #161c26;
+  --card:      #1c2535;
+  --border:    #263045;
+  --accent:    #1e6fb5;
+  --accent2:   #2491d4;
+  --red:       #cb2c21;
+  --green:     #1e7e4a;
+  --green-lit: #27ae60;
+  --red-lit:   #e74c3c;
+  --text:      #d0d9e8;
+  --muted:     #7a8fa8;
+  --label:     #5b8fbf;
+  --white:     #f0f4fa;
+}
+:root.light {
+  --bg:        #eef2f7;
+  --surface:   #dde5f0;
+  --card:      #f4f7fb;
+  --border:    #b8c8de;
+  --accent:    #1e6fb5;
+  --accent2:   #1a7abf;
+  --red:       #c0392b;
+  --green:     #1e7e4a;
+  --green-lit: #1a7a40;
+  --red-lit:   #c0392b;
+  --text:      #1a2535;
+  --muted:     #4a6480;
+  --label:     #83b9f0;
+  --white:     #0d1a2e;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Lato', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background .25s, color .25s;
+}
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #0a1a2e 0%, #0f2a4a 60%, #12355e 100%);
+  border-bottom: 2px solid var(--accent);
+  padding: 24px 24px 20px;
+  position: relative;
+}
+:root.light header { background: linear-gradient(135deg, #1a3a5c, #1e5599, #1a6abf); }
+header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--red), var(--accent), var(--accent2));
+}
+.header-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header-text { flex: 1; }
+.header-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--label); margin-bottom: 4px;
+}
+header h1 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 32px; font-weight: 700;
+  color: #f0f4fa; line-height: 1.1;
+}
+header h1 span { color: var(--accent2); }
+.header-sub { font-size: 13px; color: #7a9ab8; margin-top: 4px; }
+
+#theme-toggle {
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  color: #f0f4fa; width: 34px; height: 34px;
+  border-radius: 6px; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s; flex-shrink: 0;
+}
+#theme-toggle:hover { background: rgba(255,255,255,.2); }
+
+/* ── CONTROLS BAR ── */
+.controls {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.controls-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.progress-bar-outer {
+  width: 140px; height: 6px;
+  background: var(--border);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 3px;
+  transition: width .3s;
+  width: 0%;
+}
+#progress-text { min-width: 50px; }
+.spacer { flex: 1; }
+#save-status {
+  font-size: 12px; opacity: 0;
+  transition: opacity .4s;
+  min-width: 80px; text-align: right;
+}
+.score-btn {
+  background: var(--accent); border: none;
+  color: #fff; padding: 7px 18px;
+  border-radius: 4px; font-family: 'Lato', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; letter-spacing: 1px;
+  text-transform: uppercase; transition: background .15s;
+}
+.score-btn:hover { background: var(--accent2); }
+.score-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── SCORE SUMMARY ── */
+#score-summary {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#score-summary.show { display: flex; }
+.score-card-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px 36px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  text-align: center;
+}
+.score-card-wrap h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--white);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.total-score-row {
+  background: linear-gradient(135deg, #0f2a4a, #0a2040);
+  border: 1px solid var(--accent);
+  border-radius: 6px; padding: 20px 24px;
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 16px;
+}
+:root.light .total-score-row { background: linear-gradient(135deg, #cddaed, #b8ccdf); }
+.total-score-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 48px; font-weight: 700;
+  color: var(--accent2); line-height: 1;
+}
+.total-score-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--label);
+  margin-bottom: 4px;
+}
+.pass-badge, .fail-badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px; font-weight: 700;
+  padding: 6px 18px; border-radius: 4px;
+}
+.pass-badge { background: var(--green); color: #fff; }
+.fail-badge { background: var(--red); color: #fff; }
+.reset-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted); padding: 8px 18px;
+  border-radius: 4px; font-family: 'Lato', sans-serif;
+  font-size: 13px; cursor: pointer;
+  transition: all .15s; margin-top: 16px;
+}
+.reset-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* ── MAIN ── */
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── QUESTION CARD ── */
+.q-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.q-card.correct { border-color: var(--green-lit); }
+.q-card.wrong   { border-color: var(--red-lit); }
+
+.q-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 8px;
+}
+.q-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--label);
+}
+.q-status { font-size: 18px; margin-left: auto; }
+
+/* ── STRIP IMAGE (wide HRDP trend format) ── */
+.strip-wrap {
+  padding: 0 16px 12px;
+}
+.strip-img {
+  width: 100%;
+  border-radius: 6px;
+  display: block;
+  border: 1px solid var(--border);
+  background: #fff;
+  object-fit: contain;
+}
+
+/* ── CHOICES ── */
+.choices {
+  padding: 0 16px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.choice-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Lato', sans-serif;
+  font-size: 14px; font-weight: 700;
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  letter-spacing: .3px;
+}
+.choice-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.choice-btn:disabled { cursor: default; }
+.choice-btn.correct {
+  background: #0a2016;
+  border-color: var(--green-lit);
+  color: #7de0a0;
+}
+.choice-btn.wrong {
+  background: #200a0a;
+  border-color: var(--red-lit);
+  color: #e08080;
+}
+.choice-btn.reveal {
+  background: #0a2016;
+  border-color: var(--green-lit);
+  color: #7de0a0;
+  opacity: .6;
+}
+:root.light .choice-btn.correct { background: #c8eeda; color: #0d4a24; }
+:root.light .choice-btn.wrong   { background: #f5d0d0; color: #6b1010; }
+:root.light .choice-btn.reveal  { background: #c8eeda; color: #0d4a24; opacity: .7; }
+
+/* ── FEEDBACK ── */
+.feedback {
+  margin: 0 16px 14px;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: none;
+  line-height: 1.5;
+}
+.feedback.correct {
+  background: #0a2016;
+  border-left: 3px solid var(--green-lit);
+  color: #7de0a0;
+  display: block;
+}
+.feedback.wrong {
+  background: #200a0a;
+  border-left: 3px solid var(--red-lit);
+  color: #e08080;
+  display: block;
+}
+:root.light .feedback.correct { background: #c8eeda; color: #0d4a24; }
+:root.light .feedback.wrong   { background: #f5d0d0; color: #6b1010; }
+
+/* ── NAV (prev / next) ── */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px 30px;
+}
+.nav-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: all .15s;
+  flex: 1;
+}
+.nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+.nav-jump {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--muted);
+  min-width: 70px;
+  text-align: center;
+}
+
+/* ── NAME FIELD / TEST MODE / SEND STATUS ── */
+.name-field { text-align: left; margin-bottom: 20px; }
+.name-field label {
+  display: block;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--label); margin-bottom: 6px;
+}
+.name-field input {
+  width: 100%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Lato', sans-serif;
+  font-size: 15px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color .15s;
+}
+.name-field input:focus { border-color: var(--accent2); }
+.name-field input.invalid { border-color: var(--red-lit); }
+.name-hint { font-size: 12px; color: var(--red-lit); margin-top: 4px; min-height: 16px; }
+
+.choice-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.tech-line { font-size: 13px; color: var(--muted); margin: -8px 0 16px; }
+.tech-line strong { color: var(--text); }
+.send-status { font-size: 13px; margin-top: 4px; min-height: 20px; }
+.send-status.ok   { color: var(--green-lit); }
+.send-status.fail { color: var(--red-lit); }
+.send-status.busy { color: var(--muted); }
+.primary-wide {
+  width: 100%; margin-top: 16px; padding: 10px 18px;
+}
+
+/* ── PICKER MODAL ── */
+#picker-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+#picker-overlay.show { display: flex; }
+.picker-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 32px 36px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.picker-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--label); margin-bottom: 10px;
+}
+.picker-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--white); margin-bottom: 6px;
+}
+.picker-sub {
+  font-size: 13px; color: var(--muted);
+  margin-bottom: 24px;
+}
+.picker-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.pick-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px; font-weight: 700;
+  padding: 14px 8px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.pick-btn:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.pick-btn.selected {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: #fff;
+}
+.pick-btn:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+}
+.pick-btn .pick-label {
+  display: block;
+  font-size: 10px; font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  opacity: .7;
+}
+.picker-start {
+  background: var(--accent);
+  border: none; color: #fff;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px; font-weight: 700;
+  padding: 12px 36px;
+  border-radius: 5px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background .15s;
+  width: 100%;
+}
+.picker-start:hover { background: var(--accent2); }
+.picker-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--label); margin-bottom: 8px; text-align: left;
+}
+
+/* ── TWO-PART TEST ── */
+.part-tag {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 3px;
+  color: #fff; background: var(--accent);
+}
+.part-tag.part-2 { background: var(--red); }
+.q-prompt {
+  font-family: 'Lato', sans-serif;
+  font-size: 16px; font-weight: 700;
+  color: var(--white);
+  padding: 0 16px 10px;
+}
+.part-break { padding: 36px 32px; text-align: center; }
+.part-break p { font-family: 'Lato', sans-serif; font-size: 15px; color: var(--text); line-height: 1.6; margin: 0 auto 12px; max-width: 560px; }
+.break-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--green-lit); margin-bottom: 6px;
+}
+.break-title {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 30px; font-weight: 700;
+  color: var(--white); margin-bottom: 16px;
+}
+.break-warn { color: var(--red-lit); font-weight: 700; }
+.break-go { max-width: 320px; margin-top: 10px; }
+#part-scores { margin-bottom: 8px; }
+.part-score {
+  display: flex; justify-content: space-between;
+  font-family: 'Lato', sans-serif; font-size: 14px; color: var(--text);
+  padding: 8px 4px; border-bottom: 1px solid var(--border);
+}
+.part-score strong { color: var(--white); }
+
+@media (max-width: 600px) {
+  .choices { grid-template-columns: 1fr; }
+  header h1 { font-size: 24px; }
+  .score-btn { padding: 6px 10px; font-size: 11px; letter-spacing: 0; }
+  .progress-bar-outer { width: 60px; }
+  #progress-text { min-width: 36px; font-size: 12px; }
+  .controls-inner { flex-wrap: nowrap; gap: 6px; }
+  .nav-btn { padding: 12px 10px; font-size: 13px; }
+}
+
+/* ══════════ HOTSPOT DRILL ══════════ */
+main, .header-inner, .controls-inner { max-width: 1100px; }
+.q-prompt.big {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 24px; font-weight: 600; color: var(--white);
+  padding: 4px 20px 0;
+}
+.q-hint { font-size: 13px; color: var(--muted); padding: 0 20px 10px; }
+.hs-wrap {
+  position: relative; margin: 0 20px; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border); cursor: crosshair; user-select: none;
+  touch-action: manipulation;
+}
+.hs-wrap.locked { cursor: default; }
+.hs-wrap img { display: block; width: 100%; height: auto; pointer-events: none; }
+.hs-layer { position: absolute; inset: 0; pointer-events: none; }
+/* the trainee's clicks */
+.mark {
+  position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px;
+  border-radius: 50%; border: 3px solid var(--accent2);
+  background: rgba(36,145,212,.18); box-shadow: 0 0 0 2px rgba(255,255,255,.7);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #fff;
+  animation: pop .18s ease-out;
+}
+.mark.hit  { border-color: var(--green-lit); background: var(--green-lit); }
+.mark.miss { border-color: var(--red-lit);   background: var(--red-lit); }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* correct zones revealed after answering */
+.zone {
+  position: absolute; border-radius: 50%;
+  border: 2px dashed var(--green-lit); background: rgba(39,174,96,.12);
+  animation: fadein .3s ease-out;
+}
+.zone.found { border-style: solid; background: rgba(39,174,96,.2); }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.hs-actions { display: flex; gap: 10px; align-items: center; padding: 12px 20px 0; flex-wrap: wrap; }
+.hs-count { font-size: 13px; color: var(--muted); }
+.hs-btn {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 600;
+  letter-spacing: .5px; padding: 7px 18px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--text);
+}
+.hs-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hs-btn.primary:hover:not(:disabled) { background: var(--accent2); }
+.hs-btn:disabled { opacity: .35; cursor: not-allowed; }
+.feedback { margin: 12px 20px 0; }
+.q-card { padding-bottom: 18px; }
+.q-card .q-header { padding: 14px 20px 6px; }
+
+/* ── SETUP MODE (?setup in the URL) ── */
+.setup-banner {
+  background: #b7791f; color: #fff; text-align: center; padding: 8px;
+  font-family: 'Barlow Condensed', sans-serif; letter-spacing: 1px; font-size: 15px;
+}
+.setup-panel { padding: 12px 20px 0; display: grid; gap: 10px; }
+.setup-panel label { font-size: 13px; color: var(--muted); }
+.setup-panel input[type=text], .setup-panel textarea {
+  width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px;
+}
+.setup-panel textarea { font-family: Consolas, monospace; font-size: 12px; min-height: 54px; }
+.setup-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.zone.draft { border: 3px solid #f0a020; background: rgba(240,160,32,.28); }
+</style>
+</head>
+<body>
+
+<div class="setup-banner" id="setup-banner" style="display:none">SETUP MODE · click a strip to place answer zones, then copy the CSV row</div>
+
+<header>
+  <div class="header-inner">
+    <div class="header-text">
+      <div class="header-eyebrow">Pivotal Health · ECG Skills Training</div>
+      <h1>ECG <span>Hotspot Drill</span></h1>
+      <div class="header-sub"><span id="strip-count">—</span> Strips · Click directly on the finding</div>
+    </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-inner">
+    <div class="progress-wrap">
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="progress-bar"></div></div>
+      <span id="progress-text">0 / 0</span>
+    </div>
+    <div class="spacer"></div>
+    <span id="save-status" style="font-size:13px;transition:opacity .4s"></span>
+    <button class="score-btn" style="background:transparent;border:1px solid var(--border);color:var(--muted);margin-right:4px;" onclick="resetDrill()">Reset</button>
+    <button class="score-btn" id="score-btn" onclick="showScore()">Score</button>
+  </div>
+</div>
+
+<div id="picker-overlay">
+  <div class="picker-box">
+    <div class="picker-eyebrow">Pivotal Health · ECG Skills Training</div>
+    <div class="picker-title">Before you begin</div>
+    <div class="picker-sub">Read the prompt, then click right on the strip where you see it.</div>
+    <div class="picker-label">How many strips?</div>
+    <div class="picker-options" id="picker-options">
+      <button class="pick-btn" data-count="10" onclick="selectCount(this)">10 <span class="pick-label">Quick</span></button>
+      <button class="pick-btn" data-count="25" onclick="selectCount(this)">25 <span class="pick-label">Standard</span></button>
+      <button class="pick-btn" data-count="50" onclick="selectCount(this)">50 <span class="pick-label">Extended</span></button>
+      <button class="pick-btn" data-count="all" onclick="selectCount(this)">All <span class="pick-label">Every strip</span></button>
+    </div>
+    <button class="picker-start" onclick="startDrill()">Start Drill</button>
+  </div>
+</div>
+
+<div id="score-summary">
+  <div class="score-card-wrap">
+    <h2>Drill Complete</h2>
+    <div class="total-score-row">
+      <div>
+        <div class="total-score-label">Score</div>
+        <div class="total-score-num" id="score-num">—</div>
+      </div>
+      <div id="score-badge"></div>
+    </div>
+    <div id="score-note" style="font-size:13px;color:var(--muted);margin-bottom:12px"></div>
+    <button class="reset-btn" onclick="resetDrill()" style="width:100%;">Start a New Session</button>
+    <button class="reset-btn" onclick="document.getElementById('score-summary').classList.remove('show')" style="margin-top:10px;width:100%;">Keep Reviewing</button>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<script>
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+const CSV_URL    = 'answer_key.csv';
+const IMG_DIR    = 'images/';
+const imgSrc = n => (window.EMBEDDED_IMAGES && window.EMBEDDED_IMAGES[n]) || IMG_DIR + n;
+const STORE_KEY  = 'hotspot_drill_v1';
+const PASS_PCT   = 80;
+const SETUP_MODE = new URLSearchParams(location.search).has('setup');
+const DEFAULT_ZONE = { rx: 3.5, ry: 30 };   // starting zone size in setup mode (% of width / height)
+
+/*
+  answer_key.csv columns
+    image        file name inside images/
+    prompt       what the trainee should click ("Click the PVC.")
+    targets      one or more answer zones, separated by ;
+                 each zone is  x:y:rx:ry  in PERCENT of the image size
+                 (x,y = centre, rx,ry = half-width / half-height of the oval)
+    explanation  shown after they answer
+  You never have to work these numbers out by hand. Open the page with ?setup on the end of the URL.
+*/
+
+let QUESTIONS = [];
+let order = [], cursor = 0, state = {};   // state[image] = { marks:[{x,y}], done:bool, correct:bool }
+
+// ── CSV ──────────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  text = text.replace(/\r/g, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const head = rows.shift().map(h => h.trim().toLowerCase());
+  return rows.filter(r => r.join('').trim()).map(r => {
+    const o = {}; head.forEach((h, i) => o[h] = (r[i] || '').trim());
+    o.zones = (o.targets || '').split(';').filter(Boolean).map(z => {
+      const [x, y, rx, ry] = z.split(':').map(Number);
+      return { x, y, rx: rx || DEFAULT_ZONE.rx, ry: ry || DEFAULT_ZONE.ry };
+    });
+    return o;
+  }).filter(o => o.image && o.zones.length);
+}
+const getQ = img => QUESTIONS.find(q => q.image === img);
+
+// ── HIT TEST (is a click inside an oval zone?) ───────────────────────────
+function inZone(p, z) {
+  const dx = (p.x - z.x) / z.rx, dy = (p.y - z.y) / z.ry;
+  return dx * dx + dy * dy <= 1;
+}
+function grade(q, marks) {
+  const found = q.zones.map(z => marks.some(m => inZone(m, z)));
+  const hits  = marks.map(m => q.zones.some(z => inZone(m, z)));
+  return { found, hits, correct: found.every(Boolean) && hits.every(Boolean) };
+}
+
+// ── SAVE / LOAD ──────────────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ order, cursor, state })); } catch (e) {}
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (s && s.order && s.order.length && s.order.every(getQ)) {
+      order = s.order; cursor = s.cursor || 0; state = s.state || {}; return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+// ── PICKER ───────────────────────────────────────────────────────────────
+let pickCount = 'all';
+function showPicker() {
+  document.querySelectorAll('.pick-btn').forEach(b => {
+    const n = b.dataset.count;
+    b.disabled = n !== 'all' && +n > QUESTIONS.length;
+    b.classList.toggle('selected', n === pickCount);
+  });
+  document.getElementById('picker-overlay').classList.add('show');
+}
+function selectCount(btn) {
+  pickCount = btn.dataset.count;
+  document.querySelectorAll('.pick-btn').forEach(b => b.classList.toggle('selected', b === btn));
+}
+function startDrill() {
+  const all = QUESTIONS.map(q => q.image).sort(() => Math.random() - .5);
+  order = pickCount === 'all' ? all : all.slice(0, +pickCount);
+  cursor = 0; state = {};
+  document.getElementById('picker-overlay').classList.remove('show');
+  save(); render();
+}
+function resetDrill() {
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  order = []; state = {}; cursor = 0;
+  document.getElementById('score-summary').classList.remove('show');
+  document.getElementById('main').innerHTML = '';
+  updateProgress(); showPicker();
+}
+
+// ── RENDER ONE QUESTION ──────────────────────────────────────────────────
+function render() {
+  const img = order[cursor], q = getQ(img);
+  const st = state[img] || (state[img] = { marks: [], done: false, correct: false });
+  const multi = q.zones.length > 1;
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="q-card ${st.done ? (st.correct ? 'correct' : 'wrong') : ''}">
+      <div class="q-header">
+        <span class="q-num">${String(cursor + 1).padStart(2, '0')} of ${order.length}</span>
+        <span class="q-status">${st.done ? (st.correct ? '✅' : '❌') : ''}</span>
+      </div>
+      <div class="q-prompt big">${q.prompt}</div>
+      <div class="q-hint">${multi
+        ? `There are <strong>${q.zones.length}</strong> to find. Click each one, then press <strong>Check</strong>. Click a marker again to remove it.`
+        : 'Click directly on it. Your first click is your answer.'}</div>
+      <div class="hs-wrap ${st.done ? 'locked' : ''}" id="hs">
+        <img src="${imgSrc(img)}" alt="ECG strip" draggable="false">
+        <div class="hs-layer" id="layer"></div>
+      </div>
+      ${multi && !st.done ? `
+        <div class="hs-actions">
+          <button class="hs-btn primary" id="check-btn" onclick="checkMulti()">Check</button>
+          <button class="hs-btn" onclick="clearMarks()">Clear</button>
+          <span class="hs-count" id="hs-count"></span>
+        </div>` : ''}
+      <div class="feedback ${st.done ? (st.correct ? 'correct' : 'wrong') : ''}" id="fb"
+           style="${st.done ? '' : 'display:none'}">${st.done ? feedbackHTML(q, st) : ''}</div>
+    </div>
+    <div class="nav-bar">
+      <button class="nav-btn" onclick="go(-1)" ${cursor === 0 ? 'disabled' : ''}>◀ Previous</button>
+      <span class="nav-jump">${cursor + 1} / ${order.length}</span>
+      ${cursor === order.length - 1
+        ? `<button class="nav-btn" onclick="showScore()">Finish ▶</button>`
+        : `<button class="nav-btn" onclick="go(1)">Next ▶</button>`}
+    </div>`;
+  document.getElementById('hs').addEventListener('click', onStripClick);
+  drawLayer(); updateProgress();
+}
+
+function feedbackHTML(q, st) {
+  const g = grade(q, st.marks);
+  let head;
+  if (st.correct) head = q.zones.length > 1 ? `Correct! You found all ${q.zones.length}.` : 'Correct!';
+  else {
+    const missed = g.found.filter(f => !f).length, extra = g.hits.filter(h => !h).length;
+    const bits = [];
+    if (missed) bits.push(`${missed} missed`);
+    if (extra) bits.push(`${extra} click${extra > 1 ? 's' : ''} off target`);
+    head = `Not quite (${bits.join(', ')}). The correct area is outlined in green.`;
+  }
+  return `<strong>${head}</strong>${q.explanation ? `<br>${q.explanation}` : ''}`;
+}
+
+function drawLayer() {
+  const img = order[cursor], q = getQ(img), st = state[img];
+  const layer = document.getElementById('layer');
+  let html = '';
+  if (st.done) {
+    const g = grade(q, st.marks);
+    q.zones.forEach((z, i) => html += zoneHTML(z, g.found[i] ? 'zone found' : 'zone'));
+    st.marks.forEach((m, i) => html += markHTML(m, g.hits[i] ? 'mark hit' : 'mark miss', g.hits[i] ? '✓' : '✕'));
+  } else {
+    st.marks.forEach((m, i) => html += markHTML(m, 'mark', q.zones.length > 1 ? i + 1 : ''));
+  }
+  layer.innerHTML = html;
+  const cnt = document.getElementById('hs-count');
+  if (cnt) cnt.textContent = `${st.marks.length} of ${q.zones.length} marked`;
+}
+const zoneHTML = (z, cls) =>
+  `<div class="${cls}" style="left:${z.x - z.rx}%;top:${z.y - z.ry}%;width:${z.rx * 2}%;height:${z.ry * 2}%"></div>`;
+const markHTML = (m, cls, label) =>
+  `<div class="${cls}" style="left:${m.x}%;top:${m.y}%">${label}</div>`;
+
+// Click position as % of the image, so it works at any screen size
+function pctFromEvent(e, el) {
+  const r = el.getBoundingClientRect();
+  return { x: +((e.clientX - r.left) / r.width * 100).toFixed(1),
+           y: +((e.clientY - r.top) / r.height * 100).toFixed(1) };
+}
+
+function onStripClick(e) {
+  const img = order[cursor], q = getQ(img), st = state[img];
+  if (st.done) return;
+  const p = pctFromEvent(e, e.currentTarget);
+  if (q.zones.length === 1) {
+    st.marks = [p]; finish(q, st);
+    return;
+  }
+  // Multi-target: clicking near an existing marker removes it
+  const r = e.currentTarget.getBoundingClientRect();
+  const near = st.marks.findIndex(m =>
+    Math.hypot((m.x - p.x) * r.width / 100, (m.y - p.y) * r.height / 100) < 16);
+  if (near >= 0) st.marks.splice(near, 1);
+  else st.marks.push(p);
+  save(); drawLayer();
+}
+function clearMarks() { state[order[cursor]].marks = []; save(); drawLayer(); }
+function checkMulti() {
+  const img = order[cursor], st = state[img];
+  if (!st.marks.length) return;
+  finish(getQ(img), st);
+}
+function finish(q, st) {
+  st.done = true;
+  st.correct = grade(q, st.marks).correct;
+  save(); render();
+}
+
+function go(d) {
+  cursor = Math.max(0, Math.min(order.length - 1, cursor + d));
+  save(); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── PROGRESS + SCORE ─────────────────────────────────────────────────────
+function updateProgress() {
+  const done = order.filter(i => state[i] && state[i].done).length;
+  document.getElementById('progress-text').textContent = `${done} / ${order.length}`;
+  document.getElementById('progress-bar').style.width = order.length ? (done / order.length * 100) + '%' : '0%';
+}
+function showScore() {
+  const done = order.filter(i => state[i] && state[i].done);
+  const right = done.filter(i => state[i].correct).length;
+  const pct = order.length ? Math.round(right / order.length * 100) : 0;
+  document.getElementById('score-num').textContent = `${right} / ${order.length}`;
+  document.getElementById('score-badge').innerHTML =
+    `<span class="${pct >= PASS_PCT ? 'pass-badge' : 'fail-badge'}">${pct}%</span>`;
+  const left = order.length - done.length;
+  document.getElementById('score-note').textContent =
+    left ? `${left} strip${left > 1 ? 's' : ''} not answered yet (counted as wrong).` : '';
+  document.getElementById('score-summary').classList.add('show');
+}
+
+// ── SETUP MODE ───────────────────────────────────────────────────────────
+// Open index.html?setup  →  every strip in the CSV (plus one blank slot for a new image)
+// Click to drop a zone, use the sliders to size it, copy the finished CSV row.
+function renderSetup() {
+  document.getElementById('setup-banner').style.display = 'block';
+  document.querySelector('.controls').style.display = 'none';
+  const items = QUESTIONS.map(q => ({ image: q.image, prompt: q.prompt, explanation: q.explanation,
+                                      zones: q.zones.map(z => ({ ...z })) }));
+  items.push({ image: '', prompt: '', explanation: '', zones: [] });
+  const main = document.getElementById('main');
+  main.innerHTML = items.map((it, i) => `
+    <div class="q-card" id="set-${i}">
+      <div class="setup-panel">
+        <div class="setup-row">
+          <label style="flex:0 0 90px">Image file</label>
+          <input type="text" value="${it.image}" placeholder="hs007.png" style="flex:1"
+                 oninput="SET[${i}].image=this.value;document.getElementById('simg-${i}').src=imgSrc(this.value);setupRow(${i})">
+        </div>
+        <div class="setup-row">
+          <label style="flex:0 0 90px">Prompt</label>
+          <input type="text" value="${esc(it.prompt)}" style="flex:1" oninput="SET[${i}].prompt=this.value;setupRow(${i})">
+        </div>
+      </div>
+      <div class="hs-wrap" style="margin-top:12px" id="shs-${i}" onclick="setupClick(event,${i})">
+        <img id="simg-${i}" src="${it.image ? imgSrc(it.image) : ''}" alt="(type an image file name above)" draggable="false" style="min-height:60px">
+        <div class="hs-layer" id="slayer-${i}"></div>
+      </div>
+      <div class="setup-panel">
+        <div class="setup-row">
+          <span>Last zone width</span><input type="range" min="0.5" max="30" step="0.5" id="rx-${i}" oninput="setupSize(${i})">
+          <span>height</span><input type="range" min="3" max="50" step="1" id="ry-${i}" oninput="setupSize(${i})">
+          <button class="hs-btn" onclick="SET[${i}].zones.pop();drawSetup(${i})">Undo zone</button>
+          <button class="hs-btn" onclick="SET[${i}].zones=[];drawSetup(${i})">Clear</button>
+        </div>
+        <div class="setup-row"><label style="flex:0 0 90px">Explanation</label>
+          <input type="text" value="${esc(it.explanation)}" style="flex:1" oninput="SET[${i}].explanation=this.value;setupRow(${i})"></div>
+        <label>CSV row (copy into answer_key.csv)</label>
+        <textarea readonly id="row-${i}" onclick="this.select()"></textarea>
+        <div class="setup-row"><button class="hs-btn primary" onclick="copyRow(${i},this)">Copy row</button></div>
+      </div>
+    </div>`).join('');
+  window.SET = items;
+  items.forEach((_, i) => drawSetup(i));
+}
+const esc = s => (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function setupClick(e, i) {
+  const p = pctFromEvent(e, e.currentTarget);
+  const last = SET[i].zones[SET[i].zones.length - 1] || DEFAULT_ZONE;
+  SET[i].zones.push({ x: p.x, y: p.y, rx: last.rx, ry: last.ry });
+  drawSetup(i);
+}
+function setupSize(i) {
+  const z = SET[i].zones[SET[i].zones.length - 1]; if (!z) return;
+  z.rx = +document.getElementById('rx-' + i).value;
+  z.ry = +document.getElementById('ry-' + i).value;
+  drawSetup(i);
+}
+function drawSetup(i) {
+  const zs = SET[i].zones, last = zs[zs.length - 1];
+  document.getElementById('slayer-' + i).innerHTML = zs.map(z => zoneHTML(z, 'zone draft')).join('');
+  if (last) { document.getElementById('rx-' + i).value = last.rx; document.getElementById('ry-' + i).value = last.ry; }
+  setupRow(i);
+}
+function csvCell(s) { s = s || ''; return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function setupRow(i) {
+  const it = SET[i];
+  const t = it.zones.map(z => [z.x, z.y, z.rx, z.ry].join(':')).join(';');
+  document.getElementById('row-' + i).value =
+    [it.image, it.prompt, t, it.explanation].map(csvCell).join(',');
+}
+function copyRow(i, btn) {
+  const ta = document.getElementById('row-' + i);
+  (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.reject())
+    .catch(() => { ta.select(); document.execCommand('copy'); })
+    .finally(() => { btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = 'Copy row', 1500); });
+}
+
+// ── THEME ────────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.classList.toggle('light', t === 'light');
+  document.getElementById('theme-toggle').textContent = t === 'light' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const next = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+  applyTheme(next);
+  try { localStorage.setItem('cct_theme', next); } catch (e) {}
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+(function () {
+  try { applyTheme(localStorage.getItem('cct_theme') === 'light' ? 'light' : 'dark'); }
+  catch (e) { applyTheme('dark'); }
+  const main = document.getElementById('main');
+  main.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Loading strips…</div>';
+  const csvPromise = window.EMBEDDED_CSV
+    ? Promise.resolve(window.EMBEDDED_CSV)
+    : fetch(CSV_URL + '?cb=' + Date.now()).then(r => { if (!r.ok) throw new Error('answer_key.csv not found'); return r.text(); });
+  csvPromise.then(text => {
+    QUESTIONS = parseCSV(text);
+    if (!QUESTIONS.length) throw new Error('No questions in answer_key.csv');
+    document.getElementById('strip-count').textContent = QUESTIONS.length;
+    if (SETUP_MODE) return renderSetup();
+    if (load()) {
+      render();
+      const el = document.getElementById('save-status');
+      el.textContent = '↩ Progress restored'; el.style.color = 'var(--accent2)';
+      setTimeout(() => el.style.opacity = '0', 3000);
+    } else { main.innerHTML = ''; showPicker(); }
+  }).catch(err => {
+    main.innerHTML = `<div style="text-align:center;padding:60px;color:var(--red-lit)">Could not load the drill.<br>
+      <span style="color:var(--muted);font-size:12px">Check that answer_key.csv is in the repo root and images/ holds the strips.</span></div>`;
+    console.error(err);
+  });
+})();
+</script>
+</body>
+</html>
